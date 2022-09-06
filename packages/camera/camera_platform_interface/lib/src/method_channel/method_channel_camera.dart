@@ -406,6 +406,15 @@ class MethodChannelCamera extends CameraPlatform {
   }
 
   @override
+  Future<void> setFastFpsMode(int cameraId) =>
+      _channel.invokeMethod<void>(
+        'setFastFpsMode',
+        <String, dynamic>{
+          'cameraId': cameraId,
+        },
+      );
+
+  @override
   Future<void> setFocusMode(int cameraId, FocusMode mode) =>
       _channel.invokeMethod<void>(
         'setFocusMode',

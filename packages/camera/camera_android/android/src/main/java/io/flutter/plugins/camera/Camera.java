@@ -12,6 +12,7 @@ import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
@@ -31,6 +32,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.view.Display;
 import android.view.Surface;
@@ -54,6 +56,7 @@ import io.flutter.plugins.camera.features.exposurepoint.ExposurePointFeature;
 import io.flutter.plugins.camera.features.flash.FlashFeature;
 import io.flutter.plugins.camera.features.flash.FlashMode;
 import io.flutter.plugins.camera.features.focuspoint.FocusPointFeature;
+import io.flutter.plugins.camera.features.fpsrange.FpsRangeFeature;
 import io.flutter.plugins.camera.features.resolution.ResolutionFeature;
 import io.flutter.plugins.camera.features.resolution.ResolutionPreset;
 import io.flutter.plugins.camera.features.sensororientation.DeviceOrientationManager;
@@ -155,6 +158,10 @@ class Camera
   private CameraCaptureProperties captureProps;
 
   private MethodChannel.Result flutterResult;
+
+  private CameraConstrainedHighSpeedCaptureSession mPreviewSessionHighSpeed;
+
+  private boolean isFastFpsMode = false;
 
   /** A CameraDeviceWrapper implementation that forwards calls to a CameraDevice. */
   private class DefaultCameraDeviceWrapper implements CameraDeviceWrapper {
@@ -274,6 +281,9 @@ class Camera
                     ? getDeviceOrientationManager().getVideoOrientation()
                     : getDeviceOrientationManager().getVideoOrientation(lockedOrientation))
             .build();
+
+    Surface recorderSurface = mediaRecorder.getSurface();
+    previewRequestBuilder.addTarget(recorderSurface);
   }
 
   @SuppressLint("MissingPermission")
@@ -390,7 +400,7 @@ class Camera
   }
 
   private void createCaptureSession(
-      int templateType, Runnable onSuccessCallback, Surface... surfaces)
+          int templateType, Runnable onSuccessCallback, Surface... surfaces)
       throws CameraAccessException {
     // Close any existing capture session.
     captureSession = null;
@@ -421,6 +431,8 @@ class Camera
     cameraFeatures.getExposurePoint().setCameraBoundaries(cameraBoundaries);
     cameraFeatures.getFocusPoint().setCameraBoundaries(cameraBoundaries);
 
+    Log.d("TEST", cameraFeatures.getFpsRange().getValue().toString());
+
     // Prepare the callback.
     CameraCaptureSession.StateCallback callback =
         new CameraCaptureSession.StateCallback() {
@@ -435,6 +447,9 @@ class Camera
               return;
             }
             captureSession = session;
+            if (isFastFpsMode && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+              mPreviewSessionHighSpeed = (CameraConstrainedHighSpeedCaptureSession) captureSession;
+            }
 
             Log.i(TAG, "Updating builder settings");
             updateBuilderSettings(previewRequestBuilder);
@@ -480,7 +495,7 @@ class Camera
       throws CameraAccessException {
     cameraDevice.createCaptureSession(
         new SessionConfiguration(
-            SessionConfiguration.SESSION_REGULAR,
+            isFastFpsMode ? SessionConfiguration.SESSION_HIGH_SPEED : SessionConfiguration.SESSION_REGULAR,
             outputConfigs,
             Executors.newSingleThreadExecutor(),
             callback));
@@ -509,8 +524,14 @@ class Camera
 
     try {
       if (!pausedPreview) {
-        captureSession.setRepeatingRequest(
-            previewRequestBuilder.build(), cameraCaptureCallback, backgroundHandler);
+        if (isFastFpsMode && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+          List<CaptureRequest> mPreviewBuilderBurst = null;
+          mPreviewBuilderBurst = mPreviewSessionHighSpeed.createHighSpeedRequestList(previewRequestBuilder.build());
+          mPreviewSessionHighSpeed.setRepeatingBurst(mPreviewBuilderBurst, cameraCaptureCallback, backgroundHandler);
+        } else {
+          captureSession.setRepeatingRequest(
+                  previewRequestBuilder.build(), cameraCaptureCallback, backgroundHandler);
+        }
       }
 
       if (onSuccessCallback != null) {
@@ -775,6 +796,7 @@ class Camera
   }
 
   public void stopVideoRecording(@NonNull final Result result) {
+    isFastFpsMode = false;
     if (!recordingVideo) {
       result.success(null);
       return;
@@ -955,6 +977,20 @@ class Camera
           break;
       }
     }
+
+    if (result != null) {
+      result.success(null);
+    }
+  }
+
+  public void setFastFps(final Result result) {
+    Range<Integer> fpsRange = Range.create(240, 240);
+    final FpsRangeFeature fpsRangeFeature = cameraFeatures.getFpsRange();
+    fpsRangeFeature.setValue(fpsRange);
+    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+    previewRequestBuilder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON);
+    fpsRangeFeature.updateBuilder(previewRequestBuilder);
+    isFastFpsMode = true;
 
     if (result != null) {
       result.success(null);
@@ -1180,6 +1216,8 @@ class Camera
 
   public void close() {
     Log.i(TAG, "close");
+
+    isFastFpsMode = false;
 
     if (cameraDevice != null) {
       cameraDevice.close();

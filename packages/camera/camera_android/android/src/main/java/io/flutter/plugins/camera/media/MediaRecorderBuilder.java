@@ -104,6 +104,9 @@ public class MediaRecorderBuilder {
           camcorderProfile.videoFrameWidth, camcorderProfile.videoFrameHeight);
     }
 
+    mediaRecorder.setVideoEncodingBitRate(2000000000);
+    mediaRecorder.setVideoFrameRate(240);
+
     mediaRecorder.setOutputFile(outputFilePath);
     mediaRecorder.setOrientationHint(this.mediaOrientation);
 

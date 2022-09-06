@@ -48,6 +48,9 @@ public class FpsRangeFeature extends CameraFeature<Range<Integer>> {
           }
         }
       }
+
+//      Range<Integer> fpsRange = Range.create(240, 240);
+//      currentSetting = fpsRange;
     }
   }
 

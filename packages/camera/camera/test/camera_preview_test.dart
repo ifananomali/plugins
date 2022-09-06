@@ -117,6 +117,12 @@ class FakeController extends ValueNotifier<CameraValue>
 
   @override
   Future<void> resumePreview() async {}
+
+  @override
+  Future<void> setFastFpsMode() {
+    // TODO: implement setFastFpsMode
+    throw UnimplementedError();
+  }
 }
 
 void main() {
