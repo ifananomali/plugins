@@ -432,6 +432,8 @@ class Camera
     cameraFeatures.getFocusPoint().setCameraBoundaries(cameraBoundaries);
 
     Log.d("TEST", cameraFeatures.getFpsRange().getValue().toString());
+    final FocusPointFeature focusPointFeature = cameraFeatures.getFocusPoint();
+    final AutoFocusFeature autoFocusFeature = cameraFeatures.getAutoFocus();
 
     // Prepare the callback.
     CameraCaptureSession.StateCallback callback =
@@ -449,6 +451,8 @@ class Camera
             captureSession = session;
             if (isFastFpsMode && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
               mPreviewSessionHighSpeed = (CameraConstrainedHighSpeedCaptureSession) captureSession;
+              focusPointFeature.setValue(new Point(0.0, 0.0));
+              autoFocusFeature.setValue(FocusMode.locked);
             }
 
             Log.i(TAG, "Updating builder settings");
@@ -780,9 +784,11 @@ class Camera
       result.error("videoRecordingFailed", e.getMessage(), null);
       return;
     }
-    // Re-create autofocus feature so it's using video focus mode now.
-    cameraFeatures.setAutoFocus(
+    if (!isFastFpsMode) {
+      // Re-create autofocus feature so it's using video focus mode now if not for slow motion.
+      cameraFeatures.setAutoFocus(
         cameraFeatureFactory.createAutoFocusFeature(cameraProperties, true));
+    }
     recordingVideo = true;
     try {
       createCaptureSession(
@@ -801,9 +807,9 @@ class Camera
       result.success(null);
       return;
     }
-    // Re-create autofocus feature so it's using continuous capture focus mode now.
-    cameraFeatures.setAutoFocus(
-        cameraFeatureFactory.createAutoFocusFeature(cameraProperties, false));
+    // Re-create autofocus feature so it's using continuous capture focus mode now if not for slow motion.
+//    cameraFeatures.setAutoFocus(
+//            cameraFeatureFactory.createAutoFocusFeature(cameraProperties, false));
     recordingVideo = false;
     try {
       captureSession.abortCaptures();
