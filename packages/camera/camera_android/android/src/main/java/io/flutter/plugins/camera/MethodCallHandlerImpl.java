@@ -242,6 +242,24 @@ final class MethodCallHandlerImpl implements MethodChannel.MethodCallHandler {
         }
         break;
       }
+      case "setRegularFpsMode":
+      {
+        try {
+          camera.setRegularFps(result);
+        } catch (Exception e) {
+          handleException(e, result);
+        }
+        break;
+      }
+      case "startMediaRecorder":
+      {
+        try {
+          camera.startMediaRecorder(result);
+        } catch (Exception e) {
+          handleException(e, result);
+        }
+        break;
+      }
       case "setFocusPoint":
         {
           Boolean reset = call.argument("reset");

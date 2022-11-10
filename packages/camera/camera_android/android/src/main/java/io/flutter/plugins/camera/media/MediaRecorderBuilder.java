@@ -26,6 +26,7 @@ public class MediaRecorderBuilder {
 
   private boolean enableAudio;
   private int mediaOrientation;
+  private boolean isFastFpsMode;
 
   public MediaRecorderBuilder(
       @NonNull CamcorderProfile camcorderProfile, @NonNull String outputFilePath) {
@@ -62,6 +63,11 @@ public class MediaRecorderBuilder {
     return this;
   }
 
+  public MediaRecorderBuilder setFastFpsMode(boolean isFastFpsMode) {
+    this.isFastFpsMode = isFastFpsMode;
+    return this;
+  }
+
   public MediaRecorderBuilder setMediaOrientation(int orientation) {
     this.mediaOrientation = orientation;
     return this;
@@ -89,7 +95,6 @@ public class MediaRecorderBuilder {
       mediaRecorder.setVideoEncodingBitRate(videoProfile.getBitrate());
       mediaRecorder.setVideoFrameRate(videoProfile.getFrameRate());
       mediaRecorder.setVideoSize(videoProfile.getWidth(), videoProfile.getHeight());
-      mediaRecorder.setVideoSize(videoProfile.getWidth(), videoProfile.getHeight());
     } else {
       mediaRecorder.setOutputFormat(camcorderProfile.fileFormat);
       if (enableAudio) {
@@ -104,8 +109,10 @@ public class MediaRecorderBuilder {
           camcorderProfile.videoFrameWidth, camcorderProfile.videoFrameHeight);
     }
 
-    mediaRecorder.setVideoEncodingBitRate(2000000000);
-    mediaRecorder.setVideoFrameRate(240);
+    if (isFastFpsMode) {
+      mediaRecorder.setVideoEncodingBitRate(70000000);
+      mediaRecorder.setVideoFrameRate(240);
+    }
 
     mediaRecorder.setOutputFile(outputFilePath);
     mediaRecorder.setOrientationHint(this.mediaOrientation);

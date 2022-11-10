@@ -416,6 +416,24 @@ class AndroidCamera extends CameraPlatform {
       );
 
   @override
+  Future<void> setRegularFpsMode(int cameraId) =>
+      _channel.invokeMethod<void>(
+        'setRegularFpsMode',
+        <String, dynamic>{
+          'cameraId': cameraId,
+        },
+      );
+
+  @override
+  Future<void> startMediaRecorder(int cameraId) =>
+      _channel.invokeMethod<void>(
+        'startMediaRecorder',
+        <String, dynamic>{
+          'cameraId': cameraId,
+        },
+      );
+
+  @override
   Future<void> setFocusMode(int cameraId, FocusMode mode) =>
       _channel.invokeMethod<void>(
         'setFocusMode',

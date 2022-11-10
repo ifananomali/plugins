@@ -280,6 +280,7 @@ class Camera
                 lockedOrientation == null
                     ? getDeviceOrientationManager().getVideoOrientation()
                     : getDeviceOrientationManager().getVideoOrientation(lockedOrientation))
+            .setFastFpsMode(isFastFpsMode)
             .build();
 
     Surface recorderSurface = mediaRecorder.getSurface();
@@ -432,8 +433,13 @@ class Camera
     cameraFeatures.getFocusPoint().setCameraBoundaries(cameraBoundaries);
 
     Log.d("TEST", cameraFeatures.getFpsRange().getValue().toString());
-    final FocusPointFeature focusPointFeature = cameraFeatures.getFocusPoint();
-    final AutoFocusFeature autoFocusFeature = cameraFeatures.getAutoFocus();
+
+    if (isFastFpsMode) {
+      final FocusPointFeature focusPointFeature = cameraFeatures.getFocusPoint();
+      final AutoFocusFeature autoFocusFeature = cameraFeatures.getAutoFocus();
+      focusPointFeature.setValue(new Point(0.0, 0.0));
+      autoFocusFeature.setValue(FocusMode.locked);
+    }
 
     // Prepare the callback.
     CameraCaptureSession.StateCallback callback =
@@ -451,8 +457,6 @@ class Camera
             captureSession = session;
             if (isFastFpsMode && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
               mPreviewSessionHighSpeed = (CameraConstrainedHighSpeedCaptureSession) captureSession;
-              focusPointFeature.setValue(new Point(0.0, 0.0));
-              autoFocusFeature.setValue(FocusMode.locked);
             }
 
             Log.i(TAG, "Updating builder settings");
@@ -792,7 +796,7 @@ class Camera
     recordingVideo = true;
     try {
       createCaptureSession(
-          CameraDevice.TEMPLATE_RECORD, () -> mediaRecorder.start(), mediaRecorder.getSurface());
+          CameraDevice.TEMPLATE_RECORD, mediaRecorder.getSurface());
       result.success(null);
     } catch (CameraAccessException e) {
       recordingVideo = false;
@@ -997,6 +1001,28 @@ class Camera
     previewRequestBuilder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON);
     fpsRangeFeature.updateBuilder(previewRequestBuilder);
     isFastFpsMode = true;
+
+    if (result != null) {
+      result.success(null);
+    }
+  }
+
+  public void setRegularFps(final Result result) {
+    Range<Integer> fpsRange = Range.create(30, 60);
+    final FpsRangeFeature fpsRangeFeature = cameraFeatures.getFpsRange();
+    fpsRangeFeature.setValue(fpsRange);
+    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+    previewRequestBuilder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON);
+    fpsRangeFeature.updateBuilder(previewRequestBuilder);
+    isFastFpsMode = false;
+
+    if (result != null) {
+      result.success(null);
+    }
+  }
+
+  public void startMediaRecorder(final Result result) {
+    mediaRecorder.start();
 
     if (result != null) {
       result.success(null);
