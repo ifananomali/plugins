@@ -242,6 +242,15 @@ final class MethodCallHandlerImpl implements MethodChannel.MethodCallHandler {
         }
         break;
       }
+      case "setFastFps120Mode":
+      {
+        try {
+          camera.setFastFps120(result);
+        } catch (Exception e) {
+          handleException(e, result);
+        }
+        break;
+      }
       case "setRegularFpsMode":
       {
         try {

@@ -221,6 +221,11 @@ abstract class CameraPlatform extends PlatformInterface {
   }
 
   /// Sets the focus mode for taking pictures.
+  Future<void> setFastFps120Mode(int cameraId) {
+    throw UnimplementedError('setFastFps120Mode() is not implemented.');
+  }
+
+  /// Sets the focus mode for taking pictures.
   Future<void> setRegularFpsMode(int cameraId) {
     throw UnimplementedError('setFastFpsMode() is not implemented.');
   }

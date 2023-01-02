@@ -763,6 +763,15 @@ class CameraController extends ValueNotifier<CameraValue> {
   }
 
   /// Sets the focus mode for taking pictures.
+  Future<void> setFastFps120Mode() async {
+    try {
+      await CameraPlatform.instance.setFastFps120Mode(_cameraId);
+    } on PlatformException catch (e) {
+      throw CameraException(e.code, e.message);
+    }
+  }
+
+  /// Sets the focus mode for taking pictures.
   Future<void> setRegularFpsMode() async {
     try {
       await CameraPlatform.instance.setRegularFpsMode(_cameraId);

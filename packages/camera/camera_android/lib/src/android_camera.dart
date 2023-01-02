@@ -416,6 +416,15 @@ class AndroidCamera extends CameraPlatform {
       );
 
   @override
+  Future<void> setFastFps120Mode(int cameraId) =>
+      _channel.invokeMethod<void>(
+        'setFastFps120Mode',
+        <String, dynamic>{
+          'cameraId': cameraId,
+        },
+      );
+
+  @override
   Future<void> setRegularFpsMode(int cameraId) =>
       _channel.invokeMethod<void>(
         'setRegularFpsMode',

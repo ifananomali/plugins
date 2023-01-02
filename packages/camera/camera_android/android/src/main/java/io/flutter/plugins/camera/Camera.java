@@ -993,6 +993,20 @@ class Camera
     }
   }
 
+  public void setFastFps120(final Result result) {
+    Range<Integer> fpsRange = Range.create(120, 120);
+    final FpsRangeFeature fpsRangeFeature = cameraFeatures.getFpsRange();
+    fpsRangeFeature.setValue(fpsRange);
+    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+    previewRequestBuilder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON);
+    fpsRangeFeature.updateBuilder(previewRequestBuilder);
+    isFastFpsMode = true;
+
+    if (result != null) {
+      result.success(null);
+    }
+  }
+
   public void setFastFps(final Result result) {
     Range<Integer> fpsRange = Range.create(240, 240);
     final FpsRangeFeature fpsRangeFeature = cameraFeatures.getFpsRange();
@@ -1187,11 +1201,13 @@ class Camera
               @Override
               public void onComplete(String absolutePath) {
                 dartMessenger.finish(flutterResult, absolutePath);
+                captureFile = null;
               }
 
               @Override
               public void onError(String errorCode, String errorMessage) {
                 dartMessenger.error(flutterResult, errorCode, errorMessage, null);
+                captureFile = null;
               }
             }));
     cameraCaptureCallback.setCameraState(CameraState.STATE_PREVIEW);
